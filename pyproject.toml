@@ -1,0 +1,21 @@
+[project]
+name = "cah"
+version = "1.0.0"
+description = "Generatore di carte Cards Against Humanity"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "customtkinter>=5.2.2",
+    "pillow>=12.0.0",
+    "reportlab>=4.4.6",
+    "rich>=14.2.0",
+    "typer>=0.20.0",
+]
+
+[project.scripts]
+cah = "main:main"
+cah-cli = "main:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
