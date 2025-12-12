@@ -43,4 +43,4 @@ cah/
 
 ## Language
 
-The codebase, comments, and UI are in Italian.
+UI strings are in English. Card content may be in any language.

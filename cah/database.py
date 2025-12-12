@@ -1,4 +1,4 @@
-"""Gestione database carte predefinite."""
+"""Default cards database management."""
 
 import json
 from pathlib import Path
@@ -10,10 +10,10 @@ CARDS_FILE = DATA_DIR / "cards.json"
 
 
 def load_default_cards() -> tuple[list[Card], list[Card]]:
-    """Carica le carte predefinite dal database.
+    """Load default cards from database.
 
     Returns:
-        Tuple con (carte_nere, carte_bianche)
+        Tuple with (black_cards, white_cards)
     """
     with open(CARDS_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -40,13 +40,13 @@ def load_default_cards() -> tuple[list[Card], list[Card]]:
 
 
 def create_default_deck(config: DeckConfig | None = None) -> Deck:
-    """Crea un mazzo con le carte predefinite.
+    """Create a deck with default cards.
 
     Args:
-        config: Configurazione personalizzata del mazzo
+        config: Custom deck configuration
 
     Returns:
-        Mazzo con tutte le carte predefinite
+        Deck with all default cards
     """
     if config is None:
         config = DeckConfig()
@@ -60,7 +60,7 @@ def create_default_deck(config: DeckConfig | None = None) -> Deck:
 
 
 def get_cards_count() -> dict:
-    """Restituisce il conteggio delle carte nel database."""
+    """Return the card count in the database."""
     black_cards, white_cards = load_default_cards()
     return {
         "black": len(black_cards),

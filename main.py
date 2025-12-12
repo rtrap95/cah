@@ -1,16 +1,16 @@
-"""Entry point per il generatore Cards Against Humanity."""
+"""Entry point for the Cards Against Humanity generator."""
 
 import sys
 
 
 def main():
-    """Entry point principale - avvia la GUI."""
+    """Main entry point - launches the GUI."""
     from cah.gui import run_gui
     run_gui()
 
 
 def cli():
-    """Entry point CLI."""
+    """CLI entry point."""
     from cah.cli import menu
     menu()
 

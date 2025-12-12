@@ -3,6 +3,7 @@ name = "cah"
 version = "1.0.0"
 description = "Generatore di carte Cards Against Humanity"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.13"
 dependencies = [
     "customtkinter>=5.2.2",

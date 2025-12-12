@@ -1,4 +1,4 @@
-"""Export delle carte in PDF."""
+"""Export cards to PDF."""
 
 from pathlib import Path
 from reportlab.lib import colors
@@ -13,14 +13,14 @@ from PIL import Image
 from .models import Card, CardType, Deck
 
 
-# Dimensioni carta (stile carte da gioco)
+# Card dimensions (playing card style)
 CARD_WIDTH = 63 * mm
 CARD_HEIGHT = 88 * mm
 CARD_MARGIN = 5 * mm
 CARD_PADDING = 4 * mm
 CORNER_RADIUS = 3 * mm
 
-# Layout pagina
+# Page layout
 PAGE_MARGIN = 10 * mm
 CARDS_PER_ROW = 3
 CARDS_PER_COL = 3
@@ -28,7 +28,7 @@ CARDS_PER_PAGE = CARDS_PER_ROW * CARDS_PER_COL
 
 
 def hex_to_rgb(hex_color: str) -> tuple:
-    """Converte colore hex in RGB normalizzato (0-1)."""
+    """Convert hex color to normalized RGB (0-1)."""
     hex_color = hex_color.lstrip('#')
     r = int(hex_color[0:2], 16) / 255
     g = int(hex_color[2:4], 16) / 255
@@ -39,7 +39,7 @@ def hex_to_rgb(hex_color: str) -> tuple:
 def draw_rounded_rect(c: canvas.Canvas, x: float, y: float,
                       width: float, height: float, radius: float,
                       fill_color: tuple, stroke_color: tuple = None):
-    """Disegna un rettangolo con angoli arrotondati."""
+    """Draw a rectangle with rounded corners."""
     c.setFillColorRGB(*fill_color)
     if stroke_color:
         c.setStrokeColorRGB(*stroke_color)
@@ -47,13 +47,13 @@ def draw_rounded_rect(c: canvas.Canvas, x: float, y: float,
     else:
         c.setStrokeColorRGB(*fill_color)
 
-    # Usa roundRect di reportlab per un rettangolo corretto
+    # Use reportlab's roundRect for correct rectangle
     c.roundRect(x, y, width, height, radius,
                 fill=1, stroke=1 if stroke_color else 0)
 
 
 def wrap_text(text: str, max_chars: int = 25) -> list[str]:
-    """Divide il testo in righe."""
+    """Split text into lines."""
     words = text.split()
     lines = []
     current_line = ""
@@ -74,8 +74,8 @@ def wrap_text(text: str, max_chars: int = 25) -> list[str]:
 
 def draw_card(c: canvas.Canvas, card: Card, x: float, y: float,
               deck_name: str, short_name: str, logo_path: str | None = None):
-    """Disegna una singola carta."""
-    # Colori basati sul tipo
+    """Draw a single card."""
+    # Colors based on type
     if card.card_type == CardType.BLACK:
         bg_color = (0, 0, 0)
         text_color = (1, 1, 1)
@@ -83,32 +83,32 @@ def draw_card(c: canvas.Canvas, card: Card, x: float, y: float,
         bg_color = (1, 1, 1)
         text_color = (0, 0, 0)
 
-    # Sfondo carta
+    # Card background
     draw_rounded_rect(c, x, y, CARD_WIDTH, CARD_HEIGHT, CORNER_RADIUS,
                       bg_color, (0.5, 0.5, 0.5))
 
-    # Logo o nome breve in alto a sinistra
+    # Logo or short name in top left
     c.setFillColorRGB(*text_color)
 
     if logo_path and Path(logo_path).exists():
         try:
             logo_size = 10 * mm
             img = Image.open(logo_path)
-            # Inverti colori per carte nere se necessario
+            # Invert colors for black cards if needed
             c.drawImage(ImageReader(img),
                        x + CARD_PADDING,
                        y + CARD_HEIGHT - CARD_PADDING - logo_size,
                        width=logo_size, height=logo_size,
                        preserveAspectRatio=True, mask='auto')
         except Exception:
-            # Fallback al nome breve
+            # Fallback to short name
             c.setFont("Helvetica-Bold", 8)
             c.drawString(x + CARD_PADDING, y + CARD_HEIGHT - CARD_PADDING - 8, short_name)
     else:
         c.setFont("Helvetica-Bold", 8)
         c.drawString(x + CARD_PADDING, y + CARD_HEIGHT - CARD_PADDING - 8, short_name)
 
-    # Testo carta
+    # Card text
     text_lines = wrap_text(card.text, 22)
     font_size = 11 if len(text_lines) <= 4 else 9
     c.setFont("Helvetica-Bold", font_size)
@@ -119,33 +119,33 @@ def draw_card(c: canvas.Canvas, card: Card, x: float, y: float,
     for i, line in enumerate(text_lines):
         c.drawString(x + CARD_PADDING, text_start_y - (i * line_height), line)
 
-    # Nome mazzo in basso
+    # Deck name at bottom
     c.setFont("Helvetica", 6)
     c.drawString(x + CARD_PADDING, y + CARD_PADDING, deck_name)
 
-    # Indicatore "Pick X" per carte nere con pick > 1
+    # "Pick X" indicator for black cards with pick > 1
     if card.card_type == CardType.BLACK and card.pick > 1:
         c.setFont("Helvetica-Bold", 8)
-        pick_text = f"PESCA {card.pick}"
+        pick_text = f"PICK {card.pick}"
         c.drawRightString(x + CARD_WIDTH - CARD_PADDING, y + CARD_PADDING, pick_text)
 
 
 def export_deck_to_pdf(deck: Deck, output_path: Path,
                        cards_type: str = "all") -> Path:
-    """Esporta un mazzo in PDF.
+    """Export a deck to PDF.
 
     Args:
-        deck: Il mazzo da esportare
-        output_path: Percorso del file PDF
-        cards_type: "all", "black", o "white"
+        deck: The deck to export
+        output_path: PDF file path
+        cards_type: "all", "black", or "white"
 
     Returns:
-        Percorso del file creato
+        Path of created file
     """
     c = canvas.Canvas(str(output_path), pagesize=A4)
     page_width, page_height = A4
 
-    # Seleziona le carte da esportare
+    # Select cards to export
     cards_to_export = []
     if cards_type in ("all", "black"):
         cards_to_export.extend(deck.black_cards)
@@ -153,22 +153,22 @@ def export_deck_to_pdf(deck: Deck, output_path: Path,
         cards_to_export.extend(deck.white_cards)
 
     if not cards_to_export:
-        raise ValueError("Nessuna carta da esportare")
+        raise ValueError("No cards to export")
 
     deck_name = deck.config.name
     short_name = deck.config.short_name
     logo_path = deck.config.logo_path
 
-    # Calcola posizione iniziale
+    # Calculate starting position
     start_x = (page_width - (CARDS_PER_ROW * CARD_WIDTH + (CARDS_PER_ROW - 1) * CARD_MARGIN)) / 2
     start_y = page_height - PAGE_MARGIN - CARD_HEIGHT
 
     for i, card in enumerate(cards_to_export):
-        # Nuova pagina se necessario
+        # New page if needed
         if i > 0 and i % CARDS_PER_PAGE == 0:
             c.showPage()
 
-        # Calcola posizione sulla pagina
+        # Calculate position on page
         page_index = i % CARDS_PER_PAGE
         col = page_index % CARDS_PER_ROW
         row = page_index // CARDS_PER_ROW
@@ -185,7 +185,7 @@ def export_deck_to_pdf(deck: Deck, output_path: Path,
 def export_cards_preview(cards: list[Card], output_path: Path,
                          deck_name: str = "Cards Against Humanity",
                          short_name: str = "CAH") -> Path:
-    """Esporta un'anteprima di carte selezionate."""
+    """Export a preview of selected cards."""
     c = canvas.Canvas(str(output_path), pagesize=A4)
     page_width, page_height = A4
 

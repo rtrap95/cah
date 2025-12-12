@@ -1,4 +1,4 @@
-"""Modelli dati per le carte."""
+"""Data models for cards."""
 
 from dataclasses import dataclass, field
 from enum import Enum
@@ -8,18 +8,18 @@ from pathlib import Path
 
 
 class CardType(Enum):
-    """Tipo di carta."""
-    BLACK = "black"  # Carte domanda (nere)
-    WHITE = "white"  # Carte risposta (bianche)
+    """Card type."""
+    BLACK = "black"  # Question cards (black)
+    WHITE = "white"  # Answer cards (white)
 
 
 @dataclass
 class Card:
-    """Rappresenta una singola carta."""
+    """Represents a single card."""
     text: str
     card_type: CardType
-    pick: int = 1  # Numero di carte bianche da scegliere (solo per carte nere)
-    id: Optional[int] = None  # ID database
+    pick: int = 1  # Number of white cards to pick (black cards only)
+    id: Optional[int] = None  # Database ID
 
     def to_dict(self) -> dict:
         return {
@@ -39,7 +39,7 @@ class Card:
 
 @dataclass
 class DeckConfig:
-    """Configurazione personalizzata del mazzo."""
+    """Custom deck configuration."""
     name: str = "Cards Against Humanity"
     short_name: str = "CAH"
     logo_path: Optional[str] = None
@@ -62,11 +62,11 @@ class DeckConfig:
 
 @dataclass
 class Deck:
-    """Rappresenta un mazzo di carte personalizzato."""
+    """Represents a custom card deck."""
     config: DeckConfig
     black_cards: list[Card] = field(default_factory=list)
     white_cards: list[Card] = field(default_factory=list)
-    id: Optional[int] = None  # ID database
+    id: Optional[int] = None  # Database ID
 
     def add_card(self, card: Card) -> None:
         if card.card_type == CardType.BLACK:
@@ -96,13 +96,13 @@ class Deck:
         return deck
 
     def save(self, path: Path) -> None:
-        """Salva il mazzo su file."""
+        """Save deck to file."""
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
 
     @classmethod
     def load(cls, path: Path) -> "Deck":
-        """Carica un mazzo da file."""
+        """Load deck from file."""
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return cls.from_dict(data)

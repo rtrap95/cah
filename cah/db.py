@@ -1,4 +1,4 @@
-"""Database SQLite per la persistenza dei dati."""
+"""SQLite database for data persistence."""
 
 import sqlite3
 from pathlib import Path
@@ -8,14 +8,14 @@ import json
 
 from .models import Card, CardType, Deck, DeckConfig
 
-# Path del database
+# Database path
 DATA_DIR = Path(__file__).parent.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / "cah.db"
 
 
 def get_connection() -> sqlite3.Connection:
-    """Ottiene una connessione al database."""
+    """Get a database connection."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -23,7 +23,7 @@ def get_connection() -> sqlite3.Connection:
 
 @contextmanager
 def db_cursor():
-    """Context manager per operazioni sul database."""
+    """Context manager for database operations."""
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -37,9 +37,9 @@ def db_cursor():
 
 
 def init_db():
-    """Inizializza il database con le tabelle necessarie."""
+    """Initialize the database with required tables."""
     with db_cursor() as cursor:
-        # Tabella mazzi
+        # Decks table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS decks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,7 +53,7 @@ def init_db():
             )
         """)
 
-        # Tabella impostazioni
+        # Settings table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
@@ -61,7 +61,7 @@ def init_db():
             )
         """)
 
-        # Tabella carte
+        # Cards table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS cards (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,13 +74,13 @@ def init_db():
             )
         """)
 
-        # Indici
+        # Indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_cards_deck ON cards(deck_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_cards_type ON cards(card_type)")
 
 
 def _seed_default_cards():
-    """Carica le carte predefinite dal JSON nel database."""
+    """Load default cards from JSON into database."""
     json_path = DATA_DIR / "cards.json"
     if not json_path.exists():
         return
@@ -88,20 +88,20 @@ def _seed_default_cards():
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # Crea mazzo predefinito
+    # Create default deck
     deck_id = create_deck("Cards Against Humanity", "CAH")
 
-    # Inserisci carte nere
+    # Insert black cards
     for card_data in data.get("black_cards", []):
         add_card(deck_id, card_data["text"], CardType.BLACK, card_data.get("pick", 1))
 
-    # Inserisci carte bianche
+    # Insert white cards
     for card_data in data.get("white_cards", []):
         add_card(deck_id, card_data["text"], CardType.WHITE, 1)
 
 
 def ensure_db():
-    """Assicura che il database esista e sia inizializzato."""
+    """Ensure database exists and is initialized."""
     db_exists = DB_PATH.exists()
     init_db()
 
@@ -109,10 +109,10 @@ def ensure_db():
         _seed_default_cards()
 
 
-# === OPERAZIONI MAZZI ===
+# === DECK OPERATIONS ===
 
 def create_deck(name: str, short_name: str, logo_path: Optional[str] = None) -> int:
-    """Crea un nuovo mazzo e ritorna il suo ID."""
+    """Create a new deck and return its ID."""
     with db_cursor() as cursor:
         cursor.execute("""
             INSERT INTO decks (name, short_name, logo_path)
@@ -122,7 +122,7 @@ def create_deck(name: str, short_name: str, logo_path: Optional[str] = None) -> 
 
 
 def get_deck(deck_id: int) -> Optional[Deck]:
-    """Ottiene un mazzo per ID."""
+    """Get a deck by ID."""
     with db_cursor() as cursor:
         cursor.execute("SELECT * FROM decks WHERE id = ?", (deck_id,))
         row = cursor.fetchone()
@@ -141,7 +141,7 @@ def get_deck(deck_id: int) -> Optional[Deck]:
         deck = Deck(config=config)
         deck.id = row["id"]
 
-        # Carica carte
+        # Load cards
         cursor.execute("""
             SELECT * FROM cards WHERE deck_id = ? ORDER BY id
         """, (deck_id,))
@@ -163,7 +163,7 @@ def get_deck(deck_id: int) -> Optional[Deck]:
 
 
 def list_decks() -> list[dict]:
-    """Elenca tutti i mazzi."""
+    """List all decks."""
     with db_cursor() as cursor:
         cursor.execute("""
             SELECT d.id, d.name, d.short_name,
@@ -179,7 +179,7 @@ def list_decks() -> list[dict]:
 
 
 def update_deck(deck_id: int, name: str, short_name: str, logo_path: Optional[str] = None):
-    """Aggiorna un mazzo."""
+    """Update a deck."""
     with db_cursor() as cursor:
         cursor.execute("""
             UPDATE decks
@@ -189,16 +189,16 @@ def update_deck(deck_id: int, name: str, short_name: str, logo_path: Optional[st
 
 
 def delete_deck(deck_id: int):
-    """Elimina un mazzo e tutte le sue carte."""
+    """Delete a deck and all its cards."""
     with db_cursor() as cursor:
         cursor.execute("DELETE FROM decks WHERE id = ?", (deck_id,))
 
 
 def duplicate_deck(deck_id: int, new_name: str) -> int:
-    """Duplica un mazzo con un nuovo nome."""
+    """Duplicate a deck with a new name."""
     deck = get_deck(deck_id)
     if not deck:
-        raise ValueError(f"Mazzo {deck_id} non trovato")
+        raise ValueError(f"Deck {deck_id} not found")
 
     new_deck_id = create_deck(new_name, deck.config.short_name, deck.config.logo_path)
 
@@ -211,17 +211,17 @@ def duplicate_deck(deck_id: int, new_name: str) -> int:
     return new_deck_id
 
 
-# === OPERAZIONI CARTE ===
+# === CARD OPERATIONS ===
 
 def add_card(deck_id: int, text: str, card_type: CardType, pick: int = 1) -> int:
-    """Aggiunge una carta a un mazzo e ritorna il suo ID."""
+    """Add a card to a deck and return its ID."""
     with db_cursor() as cursor:
         cursor.execute("""
             INSERT INTO cards (deck_id, text, card_type, pick)
             VALUES (?, ?, ?, ?)
         """, (deck_id, text, card_type.value, pick))
 
-        # Aggiorna timestamp mazzo
+        # Update deck timestamp
         cursor.execute("""
             UPDATE decks SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
         """, (deck_id,))
@@ -230,13 +230,13 @@ def add_card(deck_id: int, text: str, card_type: CardType, pick: int = 1) -> int
 
 
 def update_card(card_id: int, text: str, pick: int = 1):
-    """Aggiorna una carta."""
+    """Update a card."""
     with db_cursor() as cursor:
         cursor.execute("""
             UPDATE cards SET text = ?, pick = ? WHERE id = ?
         """, (text, pick, card_id))
 
-        # Aggiorna timestamp mazzo
+        # Update deck timestamp
         cursor.execute("""
             UPDATE decks SET updated_at = CURRENT_TIMESTAMP
             WHERE id = (SELECT deck_id FROM cards WHERE id = ?)
@@ -244,9 +244,9 @@ def update_card(card_id: int, text: str, pick: int = 1):
 
 
 def delete_card(card_id: int):
-    """Elimina una carta."""
+    """Delete a card."""
     with db_cursor() as cursor:
-        # Aggiorna timestamp mazzo prima di eliminare
+        # Update deck timestamp before deleting
         cursor.execute("""
             UPDATE decks SET updated_at = CURRENT_TIMESTAMP
             WHERE id = (SELECT deck_id FROM cards WHERE id = ?)
@@ -256,7 +256,7 @@ def delete_card(card_id: int):
 
 
 def get_card(card_id: int) -> Optional[Card]:
-    """Ottiene una carta per ID."""
+    """Get a card by ID."""
     with db_cursor() as cursor:
         cursor.execute("SELECT * FROM cards WHERE id = ?", (card_id,))
         row = cursor.fetchone()
@@ -274,7 +274,7 @@ def get_card(card_id: int) -> Optional[Card]:
 
 
 def search_cards(deck_id: int, query: str, card_type: Optional[str] = None) -> list[Card]:
-    """Cerca carte in un mazzo."""
+    """Search cards in a deck."""
     with db_cursor() as cursor:
         sql = "SELECT * FROM cards WHERE deck_id = ? AND text LIKE ?"
         params = [deck_id, f"%{query}%"]
@@ -299,29 +299,29 @@ def search_cards(deck_id: int, query: str, card_type: Optional[str] = None) -> l
         return cards
 
 
-# === UTILITÀ ===
+# === UTILITIES ===
 
 def get_default_deck_id() -> Optional[int]:
-    """Ottiene l'ID del mazzo predefinito."""
+    """Get the default deck ID."""
     with db_cursor() as cursor:
-        # Prima controlla se c'è un mazzo impostato come default
+        # First check if a default deck is set
         cursor.execute("SELECT value FROM settings WHERE key = 'default_deck_id'")
         row = cursor.fetchone()
         if row and row["value"]:
             deck_id = int(row["value"])
-            # Verifica che il mazzo esista ancora
+            # Verify deck still exists
             cursor.execute("SELECT id FROM decks WHERE id = ?", (deck_id,))
             if cursor.fetchone():
                 return deck_id
 
-        # Fallback: ritorna il primo mazzo
+        # Fallback: return first deck
         cursor.execute("SELECT id FROM decks ORDER BY id LIMIT 1")
         row = cursor.fetchone()
         return row["id"] if row else None
 
 
 def set_default_deck_id(deck_id: int):
-    """Imposta il mazzo predefinito."""
+    """Set the default deck."""
     with db_cursor() as cursor:
         cursor.execute("""
             INSERT OR REPLACE INTO settings (key, value)
@@ -330,7 +330,7 @@ def set_default_deck_id(deck_id: int):
 
 
 def get_stats() -> dict:
-    """Ottiene statistiche globali."""
+    """Get global statistics."""
     with db_cursor() as cursor:
         cursor.execute("""
             SELECT

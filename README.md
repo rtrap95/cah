@@ -1,16 +1,16 @@
 # Cards Against Humanity - Generator
 
-Generatore di carte personalizzate per Cards Against Humanity con interfaccia grafica e CLI.
+Custom card generator for Cards Against Humanity with GUI and CLI interfaces.
 
-> **Note**: Questo progetto è stato creato interamente tramite *vibe coding* con [Claude Code](https://claude.ai/code).
+> **Note**: This project was created entirely through *vibe coding* with [Claude Code](https://claude.ai/code).
 
-## Requisiti
+## Requirements
 
 - Python 3.13+
 - [uv](https://github.com/astral-sh/uv) (package manager)
-- macOS: `brew install python-tk@3.13` (per tkinter)
+- macOS: `brew install python-tk@3.13` (for tkinter)
 
-## Installazione
+## Installation
 
 ```bash
 git clone <repo-url>
@@ -18,9 +18,9 @@ cd cah
 uv sync
 ```
 
-## Utilizzo
+## Usage
 
-### GUI (predefinita)
+### GUI (default)
 
 ```bash
 uv run python main.py
@@ -32,61 +32,61 @@ uv run python main.py
 uv run python main.py --cli
 ```
 
-## Funzionalità
+## Features
 
-### Gestione Mazzi
-- Crea mazzi personalizzati con nome, abbreviazione e logo
-- Carica e gestisci più mazzi
-- Imposta un mazzo predefinito per l'avvio
-- Duplica mazzi esistenti
+### Deck Management
+- Create custom decks with name, abbreviation, and logo
+- Load and manage multiple decks
+- Set a default deck for startup
+- Duplicate existing decks
 
-### Gestione Carte
-- Carte nere (domande) con supporto multi-pick (pesca 2-3 carte)
-- Carte bianche (risposte)
-- Aggiungi carte singole o in batch (più carte alla volta)
-- Modifica ed elimina carte con un click
-- Ricerca testuale
-- Paginazione per performance ottimale
+### Card Management
+- Black cards (questions) with multi-pick support (draw 2-3 cards)
+- White cards (answers)
+- Add single cards or batch import (multiple cards at once)
+- Edit and delete cards with a click
+- Text search
+- Pagination for optimal performance
 
 ### Export
-- **PDF**: Carte stampabili in formato griglia (9 per pagina)
-- **Testo**: Copia negli appunti in formato Markdown per condivisione/AI
+- **PDF**: Printable cards in grid format (9 per page)
+- **Text**: Copy to clipboard in Markdown format for sharing/AI
 
-### Altre funzionalità
-- Combo casuale: mostra combinazione carta nera + bianche
-- Navigazione da tastiera (frecce per cambiare pagina)
-- Persistenza dati con SQLite
+### Other Features
+- Random combo: displays black card + white cards combination
+- Keyboard navigation (arrows to change pages)
+- Data persistence with SQLite
 
-## Struttura Progetto
+## Project Structure
 
 ```
 cah/
-├── gui.py      # Interfaccia grafica (customtkinter)
-├── db.py       # Database SQLite
-├── models.py   # Modelli dati (Card, Deck, DeckConfig)
-├── export.py   # Generazione PDF
-├── cli.py      # Interfaccia a riga di comando
+├── gui.py      # Graphical interface (customtkinter)
+├── db.py       # SQLite database
+├── models.py   # Data models (Card, Deck, DeckConfig)
+├── export.py   # PDF generation
+├── cli.py      # Command line interface
 data/
-├── cah.db      # Database SQLite
-exports/        # PDF generati
+├── cah.db      # SQLite database
+exports/        # Generated PDFs
 ```
 
-## Scorciatoie da Tastiera
+## Keyboard Shortcuts
 
-| Tasto | Azione |
-|-------|--------|
-| ← / → | Pagina precedente/successiva |
-| ↑ / ↓ | Scroll verticale |
-| Page Up/Down | Scroll veloce |
-| Home / End | Inizio/fine lista |
+| Key | Action |
+|-----|--------|
+| ← / → | Previous/next page |
+| ↑ / ↓ | Vertical scroll |
+| Page Up/Down | Fast scroll |
+| Home / End | Start/end of list |
 
-## Tecnologie
+## Technologies
 
-- [customtkinter](https://github.com/TomSchimansky/CustomTkinter) - GUI moderna
-- [reportlab](https://www.reportlab.com/) - Generazione PDF
+- [customtkinter](https://github.com/TomSchimansky/CustomTkinter) - Modern GUI
+- [reportlab](https://www.reportlab.com/) - PDF generation
 - [SQLite](https://sqlite.org/) - Database
 - [rich](https://github.com/Textualize/rich) / [typer](https://typer.tiangolo.com/) - CLI
 
 ## License
 
-MIT
+[MIT](LICENSE) - Use, modify, and distribute freely.

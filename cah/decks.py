@@ -1,4 +1,4 @@
-"""Gestione mazzi personalizzati."""
+"""Custom deck management."""
 
 import json
 from pathlib import Path
@@ -9,15 +9,15 @@ DECKS_DIR = Path(__file__).parent.parent / "decks"
 
 
 def ensure_decks_dir():
-    """Assicura che la directory dei mazzi esista."""
+    """Ensure the decks directory exists."""
     DECKS_DIR.mkdir(exist_ok=True)
 
 
 def list_saved_decks() -> list[dict]:
-    """Elenca tutti i mazzi salvati.
+    """List all saved decks.
 
     Returns:
-        Lista di dizionari con info sui mazzi
+        List of dictionaries with deck info
     """
     ensure_decks_dir()
     decks = []
@@ -30,7 +30,7 @@ def list_saved_decks() -> list[dict]:
             decks.append({
                 "filename": deck_file.name,
                 "path": deck_file,
-                "name": data.get("config", {}).get("name", "Senza nome"),
+                "name": data.get("config", {}).get("name", "Unnamed"),
                 "short_name": data.get("config", {}).get("short_name", "???"),
                 "black_count": len(data.get("black_cards", [])),
                 "white_count": len(data.get("white_cards", []))
@@ -42,19 +42,19 @@ def list_saved_decks() -> list[dict]:
 
 
 def save_deck(deck: Deck, filename: str | None = None) -> Path:
-    """Salva un mazzo su file.
+    """Save a deck to file.
 
     Args:
-        deck: Il mazzo da salvare
-        filename: Nome file opzionale (default: nome_mazzo.json)
+        deck: The deck to save
+        filename: Optional filename (default: deck_name.json)
 
     Returns:
-        Percorso del file salvato
+        Path of saved file
     """
     ensure_decks_dir()
 
     if filename is None:
-        # Genera nome file dal nome del mazzo
+        # Generate filename from deck name
         safe_name = "".join(c if c.isalnum() or c in "._- " else "_"
                           for c in deck.config.name)
         safe_name = safe_name.strip().replace(" ", "_").lower()
@@ -69,32 +69,32 @@ def save_deck(deck: Deck, filename: str | None = None) -> Path:
 
 
 def load_deck(filename: str) -> Deck:
-    """Carica un mazzo da file.
+    """Load a deck from file.
 
     Args:
-        filename: Nome del file del mazzo
+        filename: Deck filename
 
     Returns:
-        Il mazzo caricato
+        The loaded deck
     """
     if not filename.endswith(".json"):
         filename += ".json"
 
     path = DECKS_DIR / filename
     if not path.exists():
-        raise FileNotFoundError(f"Mazzo non trovato: {filename}")
+        raise FileNotFoundError(f"Deck not found: {filename}")
 
     return Deck.load(path)
 
 
 def delete_deck(filename: str) -> bool:
-    """Elimina un mazzo salvato.
+    """Delete a saved deck.
 
     Args:
-        filename: Nome del file da eliminare
+        filename: Filename to delete
 
     Returns:
-        True se eliminato, False altrimenti
+        True if deleted, False otherwise
     """
     if not filename.endswith(".json"):
         filename += ".json"
@@ -108,15 +108,15 @@ def delete_deck(filename: str) -> bool:
 
 def create_empty_deck(name: str, short_name: str,
                       logo_path: str | None = None) -> Deck:
-    """Crea un nuovo mazzo vuoto.
+    """Create a new empty deck.
 
     Args:
-        name: Nome completo del mazzo
-        short_name: Nome breve (max 5 caratteri)
-        logo_path: Percorso opzionale al logo
+        name: Full deck name
+        short_name: Short name (max 5 characters)
+        logo_path: Optional logo path
 
     Returns:
-        Nuovo mazzo vuoto
+        New empty deck
     """
     config = DeckConfig(
         name=name,
@@ -128,16 +128,16 @@ def create_empty_deck(name: str, short_name: str,
 
 def add_card_to_deck(deck: Deck, text: str, card_type: CardType,
                      pick: int = 1) -> Card:
-    """Aggiunge una carta al mazzo.
+    """Add a card to the deck.
 
     Args:
-        deck: Il mazzo
-        text: Testo della carta
-        card_type: Tipo (BLACK o WHITE)
-        pick: Numero di carte da pescare (solo per carte nere)
+        deck: The deck
+        text: Card text
+        card_type: Type (BLACK or WHITE)
+        pick: Number of cards to pick (black cards only)
 
     Returns:
-        La carta creata
+        The created card
     """
     card = Card(text=text, card_type=card_type, pick=pick)
     deck.add_card(card)
@@ -145,14 +145,14 @@ def add_card_to_deck(deck: Deck, text: str, card_type: CardType,
 
 
 def merge_decks(base_deck: Deck, *other_decks: Deck) -> Deck:
-    """Unisce più mazzi in uno.
+    """Merge multiple decks into one.
 
     Args:
-        base_deck: Mazzo base (usa la sua configurazione)
-        other_decks: Altri mazzi da unire
+        base_deck: Base deck (uses its configuration)
+        other_decks: Other decks to merge
 
     Returns:
-        Nuovo mazzo con tutte le carte
+        New deck with all cards
     """
     merged = Deck(config=base_deck.config)
     merged.black_cards = list(base_deck.black_cards)
