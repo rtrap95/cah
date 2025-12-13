@@ -609,9 +609,9 @@ class CAHApp(ctk.CTk):
         self.wait_window(dialog)
 
         if dialog.result:
-            name, short_name, logo_path, import_default = dialog.result
+            name, short_name, black_logo, white_logo, import_default = dialog.result
             # Create deck in database
-            deck_id = db.create_deck(name, short_name, logo_path)
+            deck_id = db.create_deck(name, short_name, black_logo, white_logo)
 
             if import_default:
                 # Copy cards from default deck
@@ -752,7 +752,7 @@ class NewDeckDialog(ctk.CTkToplevel):
         self.result = None
 
         self.title("New Deck")
-        self.geometry("400x400")
+        self.geometry("400x480")
         self.resizable(False, False)
 
         # Fields
@@ -766,19 +766,36 @@ class NewDeckDialog(ctk.CTkToplevel):
         self.short_entry.pack()
         self.short_entry.insert(0, "DECK")
 
-        ctk.CTkLabel(self, text="Logo (optional):").pack(pady=(15, 5))
-        self.logo_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.logo_frame.pack()
+        # Logo for black cards
+        ctk.CTkLabel(self, text="Logo for black cards (optional):").pack(pady=(15, 5))
+        self.black_logo_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.black_logo_frame.pack()
 
-        self.logo_path = ctk.StringVar()
-        self.logo_entry = ctk.CTkEntry(self.logo_frame, width=200, textvariable=self.logo_path)
-        self.logo_entry.pack(side="left", padx=5)
+        self.black_logo_path = ctk.StringVar()
+        self.black_logo_entry = ctk.CTkEntry(self.black_logo_frame, width=200, textvariable=self.black_logo_path)
+        self.black_logo_entry.pack(side="left", padx=5)
 
         ctk.CTkButton(
-            self.logo_frame,
+            self.black_logo_frame,
             text="Browse",
             width=80,
-            command=self._browse_logo
+            command=lambda: self._browse_logo(self.black_logo_path)
+        ).pack(side="left")
+
+        # Logo for white cards
+        ctk.CTkLabel(self, text="Logo for white cards (optional):").pack(pady=(10, 5))
+        self.white_logo_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.white_logo_frame.pack()
+
+        self.white_logo_path = ctk.StringVar()
+        self.white_logo_entry = ctk.CTkEntry(self.white_logo_frame, width=200, textvariable=self.white_logo_path)
+        self.white_logo_entry.pack(side="left", padx=5)
+
+        ctk.CTkButton(
+            self.white_logo_frame,
+            text="Browse",
+            width=80,
+            command=lambda: self._browse_logo(self.white_logo_path)
         ).pack(side="left")
 
         # Import default cards checkbox
@@ -804,20 +821,21 @@ class NewDeckDialog(ctk.CTkToplevel):
 
         self.grab_set()
 
-    def _browse_logo(self):
+    def _browse_logo(self, var: ctk.StringVar):
         path = filedialog.askopenfilename(
             filetypes=[("Images", "*.png *.jpg *.jpeg")]
         )
         if path:
-            self.logo_path.set(path)
+            var.set(path)
 
     def _create(self):
         name = self.name_entry.get().strip() or "My deck"
         short_name = self.short_entry.get().strip()[:5].upper() or "DECK"
-        logo = self.logo_path.get() or None
+        black_logo = self.black_logo_path.get() or None
+        white_logo = self.white_logo_path.get() or None
 
         # Return parameters instead of creating deck
-        self.result = (name, short_name, logo, self.import_default.get())
+        self.result = (name, short_name, black_logo, white_logo, self.import_default.get())
         self.destroy()
 
 
@@ -1167,7 +1185,7 @@ class ExportDialog(ctk.CTkToplevel):
         self.deck = deck
 
         self.title("Export PDF")
-        self.geometry("400x480")
+        self.geometry("400x540")
         self.resizable(False, False)
 
         ctk.CTkLabel(
@@ -1187,20 +1205,36 @@ class ExportDialog(ctk.CTkToplevel):
         self.short_entry.pack()
         self.short_entry.insert(0, deck.config.short_name)
 
-        # Logo
-        ctk.CTkLabel(self, text="Logo (optional):").pack(pady=(10, 5))
-        logo_frame = ctk.CTkFrame(self, fg_color="transparent")
-        logo_frame.pack()
+        # Logo for black cards
+        ctk.CTkLabel(self, text="Logo for black cards (optional):").pack(pady=(10, 5))
+        black_logo_frame = ctk.CTkFrame(self, fg_color="transparent")
+        black_logo_frame.pack()
 
-        self.logo_path = ctk.StringVar(value=deck.config.logo_path or "")
-        self.logo_entry = ctk.CTkEntry(logo_frame, width=220, textvariable=self.logo_path)
-        self.logo_entry.pack(side="left", padx=5)
+        self.black_logo_path = ctk.StringVar(value=deck.config.black_logo_path or "")
+        self.black_logo_entry = ctk.CTkEntry(black_logo_frame, width=220, textvariable=self.black_logo_path)
+        self.black_logo_entry.pack(side="left", padx=5)
 
         ctk.CTkButton(
-            logo_frame,
+            black_logo_frame,
             text="Browse",
             width=70,
-            command=self._browse_logo
+            command=lambda: self._browse_logo(self.black_logo_path)
+        ).pack(side="left")
+
+        # Logo for white cards
+        ctk.CTkLabel(self, text="Logo for white cards (optional):").pack(pady=(10, 5))
+        white_logo_frame = ctk.CTkFrame(self, fg_color="transparent")
+        white_logo_frame.pack()
+
+        self.white_logo_path = ctk.StringVar(value=deck.config.white_logo_path or "")
+        self.white_logo_entry = ctk.CTkEntry(white_logo_frame, width=220, textvariable=self.white_logo_path)
+        self.white_logo_entry.pack(side="left", padx=5)
+
+        ctk.CTkButton(
+            white_logo_frame,
+            text="Browse",
+            width=70,
+            command=lambda: self._browse_logo(self.white_logo_path)
         ).pack(side="left")
 
         # Card type
@@ -1230,19 +1264,21 @@ class ExportDialog(ctk.CTkToplevel):
 
         self.grab_set()
 
-    def _browse_logo(self):
+    def _browse_logo(self, var: ctk.StringVar):
         path = filedialog.askopenfilename(
             filetypes=[("Images", "*.png *.jpg *.jpeg")]
         )
         if path:
-            self.logo_path.set(path)
+            var.set(path)
 
     def _export(self):
         # Update config
         self.deck.config.name = self.name_entry.get().strip() or "Cards Against Humanity"
         self.deck.config.short_name = self.short_entry.get().strip()[:5].upper() or "CAH"
-        logo = self.logo_path.get().strip()
-        self.deck.config.logo_path = logo if logo and Path(logo).exists() else None
+        black_logo = self.black_logo_path.get().strip()
+        white_logo = self.white_logo_path.get().strip()
+        self.deck.config.black_logo_path = black_logo if black_logo and Path(black_logo).exists() else None
+        self.deck.config.white_logo_path = white_logo if white_logo and Path(white_logo).exists() else None
 
         # Output path
         filename = f"{self.deck.config.short_name.lower()}_{self.export_type.get()}.pdf"

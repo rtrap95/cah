@@ -14,7 +14,7 @@ from .models import Card, CardType, Deck
 
 
 # Card dimensions (playing card style)
-CARD_WIDTH = 63 * mm
+CARD_WIDTH = 58 * mm
 CARD_HEIGHT = 88 * mm
 CARD_MARGIN = 5 * mm
 CARD_PADDING = 4 * mm
@@ -73,61 +73,65 @@ def wrap_text(text: str, max_chars: int = 25) -> list[str]:
 
 
 def draw_card(c: canvas.Canvas, card: Card, x: float, y: float,
-              deck_name: str, short_name: str, logo_path: str | None = None):
+              deck_name: str, short_name: str,
+              black_logo_path: str | None = None,
+              white_logo_path: str | None = None):
     """Draw a single card."""
     # Colors based on type
     if card.card_type == CardType.BLACK:
         bg_color = (0, 0, 0)
         text_color = (1, 1, 1)
+        logo_path = black_logo_path
     else:
         bg_color = (1, 1, 1)
         text_color = (0, 0, 0)
+        logo_path = white_logo_path
 
     # Card background
     draw_rounded_rect(c, x, y, CARD_WIDTH, CARD_HEIGHT, CORNER_RADIUS,
                       bg_color, (0.5, 0.5, 0.5))
 
-    # Logo or short name in top left
     c.setFillColorRGB(*text_color)
 
-    if logo_path and Path(logo_path).exists():
-        try:
-            logo_size = 10 * mm
-            img = Image.open(logo_path)
-            # Invert colors for black cards if needed
-            c.drawImage(ImageReader(img),
-                       x + CARD_PADDING,
-                       y + CARD_HEIGHT - CARD_PADDING - logo_size,
-                       width=logo_size, height=logo_size,
-                       preserveAspectRatio=True, mask='auto')
-        except Exception:
-            # Fallback to short name
-            c.setFont("Helvetica-Bold", 8)
-            c.drawString(x + CARD_PADDING, y + CARD_HEIGHT - CARD_PADDING - 8, short_name)
-    else:
-        c.setFont("Helvetica-Bold", 8)
-        c.drawString(x + CARD_PADDING, y + CARD_HEIGHT - CARD_PADDING - 8, short_name)
+    # Deck name at top, centered
+    c.setFont("Helvetica-Bold", 7)
+    deck_name_width = c.stringWidth(deck_name, "Helvetica-Bold", 7)
+    c.drawString(x + (CARD_WIDTH - deck_name_width) / 2, y + CARD_HEIGHT - CARD_PADDING - 7, deck_name)
 
     # Card text
     text_lines = wrap_text(card.text, 22)
     font_size = 11 if len(text_lines) <= 4 else 9
     c.setFont("Helvetica-Bold", font_size)
 
-    text_start_y = y + CARD_HEIGHT - 25 * mm
+    text_start_y = y + CARD_HEIGHT - 20 * mm
     line_height = font_size + 3
 
     for i, line in enumerate(text_lines):
         c.drawString(x + CARD_PADDING, text_start_y - (i * line_height), line)
 
-    # Deck name at bottom
-    c.setFont("Helvetica", 6)
-    c.drawString(x + CARD_PADDING, y + CARD_PADDING, deck_name)
+    # Logo or short name in bottom right
+    logo_size = 15 * mm
+    if logo_path and Path(logo_path).exists():
+        try:
+            img = Image.open(logo_path)
+            c.drawImage(ImageReader(img),
+                       x + CARD_WIDTH - CARD_PADDING - logo_size,
+                       y + CARD_PADDING,
+                       width=logo_size, height=logo_size,
+                       preserveAspectRatio=True, mask='auto')
+        except Exception:
+            # Fallback to short name
+            c.setFont("Helvetica-Bold", 8)
+            c.drawRightString(x + CARD_WIDTH - CARD_PADDING, y + CARD_PADDING, short_name)
+    else:
+        c.setFont("Helvetica-Bold", 8)
+        c.drawRightString(x + CARD_WIDTH - CARD_PADDING, y + CARD_PADDING, short_name)
 
-    # "Pick X" indicator for black cards with pick > 1
+    # "Pick X" indicator for black cards with pick > 1 (bottom left)
     if card.card_type == CardType.BLACK and card.pick > 1:
         c.setFont("Helvetica-Bold", 8)
         pick_text = f"PICK {card.pick}"
-        c.drawRightString(x + CARD_WIDTH - CARD_PADDING, y + CARD_PADDING, pick_text)
+        c.drawString(x + CARD_PADDING, y + CARD_PADDING, pick_text)
 
 
 def export_deck_to_pdf(deck: Deck, output_path: Path,
@@ -157,7 +161,8 @@ def export_deck_to_pdf(deck: Deck, output_path: Path,
 
     deck_name = deck.config.name
     short_name = deck.config.short_name
-    logo_path = deck.config.logo_path
+    black_logo_path = deck.config.black_logo_path
+    white_logo_path = deck.config.white_logo_path
 
     # Calculate starting position
     start_x = (page_width - (CARDS_PER_ROW * CARD_WIDTH + (CARDS_PER_ROW - 1) * CARD_MARGIN)) / 2
@@ -176,7 +181,7 @@ def export_deck_to_pdf(deck: Deck, output_path: Path,
         x = start_x + col * (CARD_WIDTH + CARD_MARGIN)
         y = start_y - row * (CARD_HEIGHT + CARD_MARGIN)
 
-        draw_card(c, card, x, y, deck_name, short_name, logo_path)
+        draw_card(c, card, x, y, deck_name, short_name, black_logo_path, white_logo_path)
 
     c.save()
     return output_path
@@ -184,7 +189,9 @@ def export_deck_to_pdf(deck: Deck, output_path: Path,
 
 def export_cards_preview(cards: list[Card], output_path: Path,
                          deck_name: str = "Cards Against Humanity",
-                         short_name: str = "CAH") -> Path:
+                         short_name: str = "CAH",
+                         black_logo_path: str | None = None,
+                         white_logo_path: str | None = None) -> Path:
     """Export a preview of selected cards."""
     c = canvas.Canvas(str(output_path), pagesize=A4)
     page_width, page_height = A4
@@ -199,7 +206,7 @@ def export_cards_preview(cards: list[Card], output_path: Path,
         x = start_x + col * (CARD_WIDTH + CARD_MARGIN)
         y = start_y - row * (CARD_HEIGHT + CARD_MARGIN)
 
-        draw_card(c, card, x, y, deck_name, short_name, None)
+        draw_card(c, card, x, y, deck_name, short_name, black_logo_path, white_logo_path)
 
     c.save()
     return output_path

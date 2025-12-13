@@ -42,7 +42,8 @@ class DeckConfig:
     """Custom deck configuration."""
     name: str = "Cards Against Humanity"
     short_name: str = "CAH"
-    logo_path: Optional[str] = None
+    black_logo_path: Optional[str] = None
+    white_logo_path: Optional[str] = None
     primary_color: str = "#000000"
     secondary_color: str = "#FFFFFF"
 
@@ -50,7 +51,8 @@ class DeckConfig:
         return {
             "name": self.name,
             "short_name": self.short_name,
-            "logo_path": self.logo_path,
+            "black_logo_path": self.black_logo_path,
+            "white_logo_path": self.white_logo_path,
             "primary_color": self.primary_color,
             "secondary_color": self.secondary_color
         }

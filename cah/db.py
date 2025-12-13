@@ -45,7 +45,8 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 short_name TEXT NOT NULL,
-                logo_path TEXT,
+                black_logo_path TEXT,
+                white_logo_path TEXT,
                 primary_color TEXT DEFAULT '#000000',
                 secondary_color TEXT DEFAULT '#FFFFFF',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -77,6 +78,13 @@ def init_db():
         # Indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_cards_deck ON cards(deck_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_cards_type ON cards(card_type)")
+
+        # Migration: rename logo_path to black_logo_path if old schema exists
+        cursor.execute("PRAGMA table_info(decks)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if "logo_path" in columns and "black_logo_path" not in columns:
+            cursor.execute("ALTER TABLE decks RENAME COLUMN logo_path TO black_logo_path")
+            cursor.execute("ALTER TABLE decks ADD COLUMN white_logo_path TEXT")
 
 
 def _seed_default_cards():
@@ -111,13 +119,18 @@ def ensure_db():
 
 # === DECK OPERATIONS ===
 
-def create_deck(name: str, short_name: str, logo_path: Optional[str] = None) -> int:
+def create_deck(
+    name: str,
+    short_name: str,
+    black_logo_path: Optional[str] = None,
+    white_logo_path: Optional[str] = None
+) -> int:
     """Create a new deck and return its ID."""
     with db_cursor() as cursor:
         cursor.execute("""
-            INSERT INTO decks (name, short_name, logo_path)
-            VALUES (?, ?, ?)
-        """, (name, short_name[:5].upper(), logo_path))
+            INSERT INTO decks (name, short_name, black_logo_path, white_logo_path)
+            VALUES (?, ?, ?, ?)
+        """, (name, short_name[:5].upper(), black_logo_path, white_logo_path))
         return cursor.lastrowid
 
 
@@ -133,7 +146,8 @@ def get_deck(deck_id: int) -> Optional[Deck]:
         config = DeckConfig(
             name=row["name"],
             short_name=row["short_name"],
-            logo_path=row["logo_path"],
+            black_logo_path=row["black_logo_path"],
+            white_logo_path=row["white_logo_path"],
             primary_color=row["primary_color"],
             secondary_color=row["secondary_color"]
         )
@@ -178,14 +192,21 @@ def list_decks() -> list[dict]:
         return [dict(row) for row in cursor.fetchall()]
 
 
-def update_deck(deck_id: int, name: str, short_name: str, logo_path: Optional[str] = None):
+def update_deck(
+    deck_id: int,
+    name: str,
+    short_name: str,
+    black_logo_path: Optional[str] = None,
+    white_logo_path: Optional[str] = None
+):
     """Update a deck."""
     with db_cursor() as cursor:
         cursor.execute("""
             UPDATE decks
-            SET name = ?, short_name = ?, logo_path = ?, updated_at = CURRENT_TIMESTAMP
+            SET name = ?, short_name = ?, black_logo_path = ?, white_logo_path = ?,
+                updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (name, short_name[:5].upper(), logo_path, deck_id))
+        """, (name, short_name[:5].upper(), black_logo_path, white_logo_path, deck_id))
 
 
 def delete_deck(deck_id: int):
@@ -200,7 +221,12 @@ def duplicate_deck(deck_id: int, new_name: str) -> int:
     if not deck:
         raise ValueError(f"Deck {deck_id} not found")
 
-    new_deck_id = create_deck(new_name, deck.config.short_name, deck.config.logo_path)
+    new_deck_id = create_deck(
+        new_name,
+        deck.config.short_name,
+        deck.config.black_logo_path,
+        deck.config.white_logo_path
+    )
 
     with db_cursor() as cursor:
         cursor.execute("""

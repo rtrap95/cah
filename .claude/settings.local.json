@@ -3,7 +3,8 @@
     "allow": [
       "Bash(uv init:*)",
       "Bash(uv add:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(uv run:*)"
     ]
   }
 }
