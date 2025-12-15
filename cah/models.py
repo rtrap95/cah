@@ -44,6 +44,8 @@ class DeckConfig:
     short_name: str = "CAH"
     black_logo_path: Optional[str] = None
     white_logo_path: Optional[str] = None
+    black_back_logo_path: Optional[str] = None
+    white_back_logo_path: Optional[str] = None
     primary_color: str = "#000000"
     secondary_color: str = "#FFFFFF"
 
@@ -53,6 +55,8 @@ class DeckConfig:
             "short_name": self.short_name,
             "black_logo_path": self.black_logo_path,
             "white_logo_path": self.white_logo_path,
+            "black_back_logo_path": self.black_back_logo_path,
+            "white_back_logo_path": self.white_back_logo_path,
             "primary_color": self.primary_color,
             "secondary_color": self.secondary_color
         }

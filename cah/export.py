@@ -1,12 +1,9 @@
 """Export cards to PDF."""
 
 from pathlib import Path
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.utils import ImageReader
 from PIL import Image
 
@@ -134,14 +131,42 @@ def draw_card(c: canvas.Canvas, card: Card, x: float, y: float,
         c.drawString(x + CARD_PADDING, y + CARD_PADDING, pick_text)
 
 
+def draw_card_back(c: canvas.Canvas, x: float, y: float,
+                   is_black: bool, logo_path: str | None = None):
+    """Draw the back of a card with centered logo."""
+    if is_black:
+        bg_color = (0, 0, 0)
+    else:
+        bg_color = (1, 1, 1)
+
+    # Card background
+    draw_rounded_rect(c, x, y, CARD_WIDTH, CARD_HEIGHT, CORNER_RADIUS,
+                      bg_color, (0.5, 0.5, 0.5))
+
+    # Centered logo
+    if logo_path and Path(logo_path).exists():
+        try:
+            img = Image.open(logo_path)
+            logo_size = 35 * mm
+            c.drawImage(ImageReader(img),
+                       x + (CARD_WIDTH - logo_size) / 2,
+                       y + (CARD_HEIGHT - logo_size) / 2,
+                       width=logo_size, height=logo_size,
+                       preserveAspectRatio=True, mask='auto')
+        except Exception:
+            pass
+
+
 def export_deck_to_pdf(deck: Deck, output_path: Path,
-                       cards_type: str = "all") -> Path:
+                       cards_type: str = "all",
+                       include_backs: bool = False) -> Path:
     """Export a deck to PDF.
 
     Args:
         deck: The deck to export
         output_path: PDF file path
         cards_type: "all", "black", or "white"
+        include_backs: If True, add back pages for double-sided printing
 
     Returns:
         Path of created file
@@ -163,25 +188,51 @@ def export_deck_to_pdf(deck: Deck, output_path: Path,
     short_name = deck.config.short_name
     black_logo_path = deck.config.black_logo_path
     white_logo_path = deck.config.white_logo_path
+    black_back_logo_path = deck.config.black_back_logo_path
+    white_back_logo_path = deck.config.white_back_logo_path
 
     # Calculate starting position
     start_x = (page_width - (CARDS_PER_ROW * CARD_WIDTH + (CARDS_PER_ROW - 1) * CARD_MARGIN)) / 2
     start_y = page_height - PAGE_MARGIN - CARD_HEIGHT
 
-    for i, card in enumerate(cards_to_export):
-        # New page if needed
-        if i > 0 and i % CARDS_PER_PAGE == 0:
+    # Group cards by page
+    total_pages = (len(cards_to_export) + CARDS_PER_PAGE - 1) // CARDS_PER_PAGE
+
+    for page_num in range(total_pages):
+        page_start = page_num * CARDS_PER_PAGE
+        page_end = min(page_start + CARDS_PER_PAGE, len(cards_to_export))
+        page_cards = cards_to_export[page_start:page_end]
+
+        # Draw front page
+        if page_num > 0:
             c.showPage()
 
-        # Calculate position on page
-        page_index = i % CARDS_PER_PAGE
-        col = page_index % CARDS_PER_ROW
-        row = page_index // CARDS_PER_ROW
+        for i, card in enumerate(page_cards):
+            col = i % CARDS_PER_ROW
+            row = i // CARDS_PER_ROW
 
-        x = start_x + col * (CARD_WIDTH + CARD_MARGIN)
-        y = start_y - row * (CARD_HEIGHT + CARD_MARGIN)
+            x = start_x + col * (CARD_WIDTH + CARD_MARGIN)
+            y = start_y - row * (CARD_HEIGHT + CARD_MARGIN)
 
-        draw_card(c, card, x, y, deck_name, short_name, black_logo_path, white_logo_path)
+            draw_card(c, card, x, y, deck_name, short_name, black_logo_path, white_logo_path)
+
+        # Draw back page (mirrored horizontally for double-sided printing)
+        if include_backs:
+            c.showPage()
+
+            for i, card in enumerate(page_cards):
+                col = i % CARDS_PER_ROW
+                row = i // CARDS_PER_ROW
+
+                # Mirror column position for back side
+                mirrored_col = CARDS_PER_ROW - 1 - col
+
+                x = start_x + mirrored_col * (CARD_WIDTH + CARD_MARGIN)
+                y = start_y - row * (CARD_HEIGHT + CARD_MARGIN)
+
+                is_black = card.card_type == CardType.BLACK
+                back_logo = black_back_logo_path if is_black else white_back_logo_path
+                draw_card_back(c, x, y, is_black, back_logo)
 
     c.save()
     return output_path

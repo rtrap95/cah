@@ -1185,7 +1185,7 @@ class ExportDialog(ctk.CTkToplevel):
         self.deck = deck
 
         self.title("Export PDF")
-        self.geometry("400x540")
+        self.geometry("400x680")
         self.resizable(False, False)
 
         ctk.CTkLabel(
@@ -1237,6 +1237,51 @@ class ExportDialog(ctk.CTkToplevel):
             command=lambda: self._browse_logo(self.white_logo_path)
         ).pack(side="left")
 
+        # Double-sided printing
+        self.include_backs = ctk.BooleanVar(value=False)
+        self.backs_checkbox = ctk.CTkCheckBox(
+            self,
+            text="Include card backs (for double-sided printing)",
+            variable=self.include_backs,
+            command=self._toggle_back_logos
+        )
+        self.backs_checkbox.pack(pady=(15, 5))
+
+        # Back logos frame (initially hidden)
+        self.back_logos_frame = ctk.CTkFrame(self, fg_color="transparent")
+
+        # Logo for black card backs
+        ctk.CTkLabel(self.back_logos_frame, text="Back logo for black cards:").pack(pady=(5, 5))
+        black_back_frame = ctk.CTkFrame(self.back_logos_frame, fg_color="transparent")
+        black_back_frame.pack()
+
+        self.black_back_logo_path = ctk.StringVar(value=deck.config.black_back_logo_path or "")
+        self.black_back_logo_entry = ctk.CTkEntry(black_back_frame, width=220, textvariable=self.black_back_logo_path)
+        self.black_back_logo_entry.pack(side="left", padx=5)
+
+        ctk.CTkButton(
+            black_back_frame,
+            text="Browse",
+            width=70,
+            command=lambda: self._browse_logo(self.black_back_logo_path)
+        ).pack(side="left")
+
+        # Logo for white card backs
+        ctk.CTkLabel(self.back_logos_frame, text="Back logo for white cards:").pack(pady=(5, 5))
+        white_back_frame = ctk.CTkFrame(self.back_logos_frame, fg_color="transparent")
+        white_back_frame.pack()
+
+        self.white_back_logo_path = ctk.StringVar(value=deck.config.white_back_logo_path or "")
+        self.white_back_logo_entry = ctk.CTkEntry(white_back_frame, width=220, textvariable=self.white_back_logo_path)
+        self.white_back_logo_entry.pack(side="left", padx=5)
+
+        ctk.CTkButton(
+            white_back_frame,
+            text="Browse",
+            width=70,
+            command=lambda: self._browse_logo(self.white_back_logo_path)
+        ).pack(side="left")
+
         # Card type
         ctk.CTkLabel(self, text="Cards to export:").pack(pady=(15, 5))
         self.export_type = ctk.StringVar(value="all")
@@ -1271,6 +1316,13 @@ class ExportDialog(ctk.CTkToplevel):
         if path:
             var.set(path)
 
+    def _toggle_back_logos(self):
+        """Show/hide back logo fields based on checkbox."""
+        if self.include_backs.get():
+            self.back_logos_frame.pack(after=self.backs_checkbox)
+        else:
+            self.back_logos_frame.pack_forget()
+
     def _export(self):
         # Update config
         self.deck.config.name = self.name_entry.get().strip() or "Cards Against Humanity"
@@ -1280,12 +1332,23 @@ class ExportDialog(ctk.CTkToplevel):
         self.deck.config.black_logo_path = black_logo if black_logo and Path(black_logo).exists() else None
         self.deck.config.white_logo_path = white_logo if white_logo and Path(white_logo).exists() else None
 
+        # Back logos
+        black_back_logo = self.black_back_logo_path.get().strip()
+        white_back_logo = self.white_back_logo_path.get().strip()
+        self.deck.config.black_back_logo_path = black_back_logo if black_back_logo and Path(black_back_logo).exists() else None
+        self.deck.config.white_back_logo_path = white_back_logo if white_back_logo and Path(white_back_logo).exists() else None
+
         # Output path
         filename = f"{self.deck.config.short_name.lower()}_{self.export_type.get()}.pdf"
         output_path = EXPORTS_DIR / filename
 
         try:
-            export_deck_to_pdf(self.deck, output_path, self.export_type.get())
+            export_deck_to_pdf(
+                self.deck,
+                output_path,
+                self.export_type.get(),
+                include_backs=self.include_backs.get()
+            )
             self.destroy()
             # Open file manager and select file
             self._reveal_in_file_manager(output_path)
