@@ -4,7 +4,13 @@
       "Bash(uv init:*)",
       "Bash(uv add:*)",
       "Bash(mkdir:*)",
-      "Bash(uv run:*)"
+      "Bash(uv run:*)",
+      "Bash(cat:*)",
+      "Bash(tree:*)",
+      "Bash(bunx drizzle-kit:*)",
+      "mcp__nuxt-ui-remote__get-migration-guide",
+      "mcp__nuxt-ui-remote__list-components",
+      "mcp__nuxt-ui-remote__get-component"
     ]
   }
 }
