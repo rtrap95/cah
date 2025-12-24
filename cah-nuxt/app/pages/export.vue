@@ -18,7 +18,8 @@ const form = reactive({
   showShortName: true,
   logoSize: 20,
   backLogoSize: 60,
-  cardPadding: 10
+  cardPadding: 10,
+  showCutLines: false
 })
 
 const cardsTypeOptions = [
@@ -70,7 +71,8 @@ async function handleExport() {
         showShortName: form.showShortName,
         logoSize: form.logoSize,
         backLogoSize: form.backLogoSize,
-        cardPadding: form.cardPadding
+        cardPadding: form.cardPadding,
+        showCutLines: form.showCutLines
       },
       responseType: 'blob'
     })
@@ -200,6 +202,11 @@ async function handleExportText() {
         <UCheckbox
           v-model="form.showShortName"
           label="Mostra abbreviazione sulle carte"
+        />
+
+        <UCheckbox
+          v-model="form.showCutLines"
+          label="Mostra linee guida per il taglio"
         />
 
         <UFormField label="Dimensione logo frontale (px)">

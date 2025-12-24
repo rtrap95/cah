@@ -51,6 +51,7 @@ interface ExportOptions {
   logoSize?: number
   backLogoSize?: number
   cardPadding?: number
+  showCutLines?: boolean
 }
 
 function wrapText(text: string, maxChars = 22): string[] {
@@ -82,6 +83,46 @@ function drawRoundedRect(doc: PDFKit.PDFDocument, x: number, y: number, width: n
   doc.lineTo(x, y + radius)
   doc.quadraticCurveTo(x, y, x + radius, y)
   doc.closePath()
+}
+
+const CUT_LINE_LENGTH = 8 * MM_TO_PT // 8mm cut marks
+const CUT_LINE_OFFSET = 2 * MM_TO_PT // 2mm offset from card edge
+
+function drawCutLines(doc: PDFKit.PDFDocument, x: number, y: number, width: number, height: number) {
+  doc.strokeColor('#888888')
+  doc.lineWidth(0.5)
+
+  // Top-left corner
+  doc.moveTo(x - CUT_LINE_OFFSET - CUT_LINE_LENGTH, y)
+  doc.lineTo(x - CUT_LINE_OFFSET, y)
+  doc.stroke()
+  doc.moveTo(x, y - CUT_LINE_OFFSET - CUT_LINE_LENGTH)
+  doc.lineTo(x, y - CUT_LINE_OFFSET)
+  doc.stroke()
+
+  // Top-right corner
+  doc.moveTo(x + width + CUT_LINE_OFFSET, y)
+  doc.lineTo(x + width + CUT_LINE_OFFSET + CUT_LINE_LENGTH, y)
+  doc.stroke()
+  doc.moveTo(x + width, y - CUT_LINE_OFFSET - CUT_LINE_LENGTH)
+  doc.lineTo(x + width, y - CUT_LINE_OFFSET)
+  doc.stroke()
+
+  // Bottom-left corner
+  doc.moveTo(x - CUT_LINE_OFFSET - CUT_LINE_LENGTH, y + height)
+  doc.lineTo(x - CUT_LINE_OFFSET, y + height)
+  doc.stroke()
+  doc.moveTo(x, y + height + CUT_LINE_OFFSET)
+  doc.lineTo(x, y + height + CUT_LINE_OFFSET + CUT_LINE_LENGTH)
+  doc.stroke()
+
+  // Bottom-right corner
+  doc.moveTo(x + width + CUT_LINE_OFFSET, y + height)
+  doc.lineTo(x + width + CUT_LINE_OFFSET + CUT_LINE_LENGTH, y + height)
+  doc.stroke()
+  doc.moveTo(x + width, y + height + CUT_LINE_OFFSET)
+  doc.lineTo(x + width, y + height + CUT_LINE_OFFSET + CUT_LINE_LENGTH)
+  doc.stroke()
 }
 
 function drawCard(
@@ -287,6 +328,11 @@ function drawFrontPage(
       options.logoSize || 20,
       options.cardPadding || 10
     )
+
+    // Draw cut lines if enabled
+    if (options.showCutLines) {
+      drawCutLines(doc, x, y, CARD_WIDTH, CARD_HEIGHT)
+    }
   })
 }
 
@@ -307,6 +353,11 @@ function drawBackPage(
       : options.logos?.whiteBack || null
 
     drawCardBack(doc, card.cardType === 'black', x, y, options.shortName, logoPath, options.showShortName !== false, options.backLogoSize || 60)
+
+    // Draw cut lines if enabled
+    if (options.showCutLines) {
+      drawCutLines(doc, x, y, CARD_WIDTH, CARD_HEIGHT)
+    }
   })
 }
 

@@ -60,4 +60,5 @@ export interface ExportConfig {
   logoSize?: number
   backLogoSize?: number
   cardPadding?: number
+  showCutLines?: boolean
 }

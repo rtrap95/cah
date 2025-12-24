@@ -14,6 +14,7 @@ interface ExportBody {
   logoSize?: number
   backLogoSize?: number
   cardPadding?: number
+  showCutLines?: boolean
 }
 
 export default defineEventHandler(async (event) => {
@@ -66,6 +67,7 @@ export default defineEventHandler(async (event) => {
     logoSize: body.logoSize || 20,
     backLogoSize: body.backLogoSize || 60,
     cardPadding: body.cardPadding || 10,
+    showCutLines: body.showCutLines || false,
     logos: {
       blackFront: toAbsolutePath(deckData.blackLogoPath),
       whiteFront: toAbsolutePath(deckData.whiteLogoPath),
