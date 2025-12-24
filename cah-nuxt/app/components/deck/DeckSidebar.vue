@@ -6,7 +6,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'add-card': []
+  'browse-cards': []
   'batch-add': []
   'export': []
   'random': []
@@ -46,10 +46,10 @@ const totalCards = computed(() => blackCount.value + whiteCount.value)
       <UButton
         block
         variant="soft"
-        icon="i-lucide-plus"
-        @click="emit('add-card')"
+        icon="i-lucide-library"
+        @click="emit('browse-cards')"
       >
-        Aggiungi Carta
+        Sfoglia Carte
       </UButton>
 
       <UButton

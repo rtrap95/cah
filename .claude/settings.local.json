@@ -10,7 +10,10 @@
       "Bash(bunx drizzle-kit:*)",
       "mcp__nuxt-ui-remote__get-migration-guide",
       "mcp__nuxt-ui-remote__list-components",
-      "mcp__nuxt-ui-remote__get-component"
+      "mcp__nuxt-ui-remote__get-component",
+      "Bash(sqlite3:*)",
+      "Bash(npm run build:*)",
+      "mcp__nuxt-ui-remote__search-components-by-category"
     ]
   }
 }

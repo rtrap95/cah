@@ -1,18 +1,38 @@
 import PDFDocument from 'pdfkit'
 import type { Card } from '~/types'
 import { existsSync } from 'fs'
+import { join } from 'path'
+
+// Font paths for emoji support
+const FONTS_DIR = join(process.cwd(), 'server/fonts')
+const FONT_REGULAR = join(FONTS_DIR, 'NotoSans-Regular.ttf')
+const FONT_BOLD = join(FONTS_DIR, 'NotoSans-Bold.ttf')
+
+// Check if custom fonts are available
+const hasCustomFonts = existsSync(FONT_BOLD) && existsSync(FONT_REGULAR)
+const BOLD_FONT = hasCustomFonts ? 'NotoSans-Bold' : 'Helvetica-Bold'
+const REGULAR_FONT = hasCustomFonts ? 'NotoSans-Regular' : 'Helvetica'
 
 // Card dimensions in points (1mm = 2.83465 points)
 const MM_TO_PT = 2.83465
-const CARD_WIDTH = 58 * MM_TO_PT  // 58mm
+const CARD_WIDTH = 58 * MM_TO_PT // 58mm
 const CARD_HEIGHT = 88 * MM_TO_PT // 88mm
 const CORNER_RADIUS = 3 * MM_TO_PT // 3mm
-const MARGIN = 10 * MM_TO_PT // 10mm margin
 const GAP = 5 * MM_TO_PT // 5mm gap between cards
 
 const CARDS_PER_ROW = 3
 const CARDS_PER_COL = 3
 const CARDS_PER_PAGE = CARDS_PER_ROW * CARDS_PER_COL
+
+// A4 dimensions: 210mm x 297mm
+const A4_WIDTH = 210 * MM_TO_PT
+const A4_HEIGHT = 297 * MM_TO_PT
+
+// Calculate centered margins
+const TOTAL_CARDS_WIDTH = (CARDS_PER_ROW * CARD_WIDTH) + ((CARDS_PER_ROW - 1) * GAP)
+const TOTAL_CARDS_HEIGHT = (CARDS_PER_COL * CARD_HEIGHT) + ((CARDS_PER_COL - 1) * GAP)
+const MARGIN_X = (A4_WIDTH - TOTAL_CARDS_WIDTH) / 2
+const MARGIN_Y = (A4_HEIGHT - TOTAL_CARDS_HEIGHT) / 2
 
 interface LogoPaths {
   blackFront: string | null
@@ -27,6 +47,10 @@ interface ExportOptions {
   cardsType: 'all' | 'black' | 'white'
   includeBacks: boolean
   logos?: LogoPaths
+  showShortName?: boolean
+  logoSize?: number
+  backLogoSize?: number
+  cardPadding?: number
 }
 
 function wrapText(text: string, maxChars = 22): string[] {
@@ -67,7 +91,10 @@ function drawCard(
   y: number,
   deckName: string,
   shortName: string,
-  logoPath: string | null
+  logoPath: string | null,
+  showShortName: boolean = true,
+  logoSize: number = 20,
+  padding: number = 10
 ) {
   const isBlack = card.cardType === 'black'
 
@@ -84,26 +111,62 @@ function drawCard(
   const textColor = isBlack ? '#ffffff' : '#000000'
   doc.fillColor(textColor)
 
-  // Card text
-  const lines = wrapText(card.text, 22)
-  const fontSize = lines.length > 4 ? 9 : 11
-  const lineHeight = fontSize * 1.3
-  const textStartY = y + 20
+  // Deck name at top (centered)
+  doc.font(BOLD_FONT).fontSize(8)
+  doc.text(deckName, x + padding, y + 12, {
+    width: CARD_WIDTH - (padding * 2),
+    align: 'center'
+  })
 
-  doc.font('Helvetica-Bold').fontSize(fontSize)
+  // Card text (starts after deck name with more spacing)
+  const textStartY = y + 38
+  const bottomReserved = 35 // Space for logo, shortName, pick indicator
+  const availableHeight = CARD_HEIGHT - 38 - bottomReserved
+
+  // Calculate font size based on text length
+  let fontSize = 12
+  let lines = wrapText(card.text, 20)
+  let lineHeight = fontSize * 1.3
+  let maxLines = Math.floor(availableHeight / lineHeight)
+
+  // If too many lines, reduce font size
+  if (lines.length > maxLines) {
+    fontSize = 10
+    lines = wrapText(card.text, 24)
+    lineHeight = fontSize * 1.3
+    maxLines = Math.floor(availableHeight / lineHeight)
+  }
+
+  // If still too many lines, reduce further
+  if (lines.length > maxLines) {
+    fontSize = 8
+    lines = wrapText(card.text, 28)
+    lineHeight = fontSize * 1.3
+    maxLines = Math.floor(availableHeight / lineHeight)
+  }
+
+  // Limit lines to available space
+  if (lines.length > maxLines) {
+    lines = lines.slice(0, maxLines)
+    // Add ellipsis to last line if truncated
+    if (lines[maxLines - 1]) {
+      lines[maxLines - 1] = lines[maxLines - 1].slice(0, -3) + '...'
+    }
+  }
+
+  doc.font(BOLD_FONT).fontSize(fontSize)
 
   lines.forEach((line, i) => {
-    doc.text(line, x + 10, textStartY + (i * lineHeight), {
-      width: CARD_WIDTH - 20,
+    doc.text(line, x + padding, textStartY + (i * lineHeight), {
+      width: CARD_WIDTH - (padding * 2),
       align: 'left'
     })
   })
 
-  // Logo at bottom left (if available)
+  // Logo at bottom right (if available)
   if (logoPath && existsSync(logoPath)) {
     try {
-      const logoSize = 20
-      doc.image(logoPath, x + 10, y + CARD_HEIGHT - logoSize - 10, {
+      doc.image(logoPath, x + CARD_WIDTH - logoSize - padding, y + CARD_HEIGHT - logoSize - padding, {
         width: logoSize,
         height: logoSize,
         fit: [logoSize, logoSize]
@@ -113,26 +176,20 @@ function drawCard(
     }
   }
 
-  // Deck name at bottom (next to logo if present)
-  const textX = logoPath && existsSync(logoPath) ? x + 35 : x + 10
-  doc.font('Helvetica-Bold').fontSize(7)
-  doc.text(deckName, textX, y + CARD_HEIGHT - 25, {
-    width: CARD_WIDTH - textX + x - 10,
-    align: 'left'
-  })
-
-  // Short name at bottom right
-  doc.font('Helvetica').fontSize(6)
-  doc.text(shortName, x + 10, y + CARD_HEIGHT - 15, {
-    width: CARD_WIDTH - 20,
-    align: 'right'
-  })
+  // Short name at bottom left (optional)
+  if (showShortName) {
+    doc.font(REGULAR_FONT).fontSize(7)
+    doc.text(shortName, x + padding, y + CARD_HEIGHT - 16, {
+      width: CARD_WIDTH - (padding * 2),
+      align: 'left'
+    })
+  }
 
   // Pick indicator for black cards
   if (isBlack && card.pick > 1) {
-    doc.font('Helvetica-Bold').fontSize(8)
-    doc.text(`PICK ${card.pick}`, textX, y + CARD_HEIGHT - 15, {
-      width: CARD_WIDTH - 20,
+    doc.font(BOLD_FONT).fontSize(9)
+    doc.text(`PICK ${card.pick}`, x + padding, y + CARD_HEIGHT - 27, {
+      width: CARD_WIDTH - (padding * 2),
       align: 'left'
     })
   }
@@ -144,7 +201,9 @@ function drawCardBack(
   x: number,
   y: number,
   shortName: string,
-  logoPath: string | null
+  logoPath: string | null,
+  showShortName: boolean = true,
+  backLogoSize: number = 60
 ) {
   // Background
   drawRoundedRect(doc, x, y, CARD_WIDTH, CARD_HEIGHT, CORNER_RADIUS)
@@ -159,39 +218,42 @@ function drawCardBack(
   // Logo in center (if available)
   if (logoPath && existsSync(logoPath)) {
     try {
-      const logoSize = 60
-      doc.image(logoPath, x + (CARD_WIDTH - logoSize) / 2, y + (CARD_HEIGHT - logoSize) / 2 - 10, {
-        width: logoSize,
-        height: logoSize,
-        fit: [logoSize, logoSize]
+      // If showing short name, offset logo up to make room for text below
+      const logoOffsetY = showShortName ? -15 : 0
+      doc.image(logoPath, x + (CARD_WIDTH - backLogoSize) / 2, y + (CARD_HEIGHT - backLogoSize) / 2 + logoOffsetY, {
+        width: backLogoSize,
+        height: backLogoSize,
+        fit: [backLogoSize, backLogoSize]
       })
-    } catch {
-      // Logo loading failed, fall back to text
-      const textColor = isBlack ? '#ffffff' : '#000000'
-      doc.fillColor(textColor)
-      doc.font('Helvetica-Bold').fontSize(16)
-      doc.text(shortName, x, y + (CARD_HEIGHT / 2) - 10, {
-        width: CARD_WIDTH,
-        align: 'center'
-      })
-    }
-  } else {
-    // No logo, just show short name
-    const textColor = isBlack ? '#ffffff' : '#000000'
-    doc.fillColor(textColor)
-    doc.font('Helvetica-Bold').fontSize(16)
-    doc.text(shortName, x, y + (CARD_HEIGHT / 2) - 10, {
-      width: CARD_WIDTH,
-      align: 'center'
-    })
-  }
 
-  // Short name below logo
-  if (logoPath && existsSync(logoPath)) {
+      // Short name below logo (optional)
+      if (showShortName) {
+        const textColor = isBlack ? '#ffffff' : '#000000'
+        doc.fillColor(textColor)
+        doc.font(BOLD_FONT).fontSize(10)
+        doc.text(shortName, x, y + (CARD_HEIGHT / 2) + backLogoSize / 2 + 10, {
+          width: CARD_WIDTH,
+          align: 'center'
+        })
+      }
+    } catch {
+      // Logo loading failed, fall back to text if showing short name
+      if (showShortName) {
+        const textColor = isBlack ? '#ffffff' : '#000000'
+        doc.fillColor(textColor)
+        doc.font(BOLD_FONT).fontSize(16)
+        doc.text(shortName, x, y + (CARD_HEIGHT / 2) - 10, {
+          width: CARD_WIDTH,
+          align: 'center'
+        })
+      }
+    }
+  } else if (showShortName) {
+    // No logo, show short name if enabled
     const textColor = isBlack ? '#ffffff' : '#000000'
     doc.fillColor(textColor)
-    doc.font('Helvetica-Bold').fontSize(10)
-    doc.text(shortName, x, y + (CARD_HEIGHT / 2) + 35, {
+    doc.font(BOLD_FONT).fontSize(16)
+    doc.text(shortName, x, y + (CARD_HEIGHT / 2) - 10, {
       width: CARD_WIDTH,
       align: 'center'
     })
@@ -206,14 +268,25 @@ function drawFrontPage(
   cards.forEach((card, index) => {
     const row = Math.floor(index / CARDS_PER_ROW)
     const col = index % CARDS_PER_ROW
-    const x = MARGIN + (col * (CARD_WIDTH + GAP))
-    const y = MARGIN + (row * (CARD_HEIGHT + GAP))
+    const x = MARGIN_X + (col * (CARD_WIDTH + GAP))
+    const y = MARGIN_Y + (row * (CARD_HEIGHT + GAP))
 
     const logoPath = card.cardType === 'black'
       ? options.logos?.blackFront || null
       : options.logos?.whiteFront || null
 
-    drawCard(doc, card, x, y, options.deckName, options.shortName, logoPath)
+    drawCard(
+      doc,
+      card,
+      x,
+      y,
+      options.deckName,
+      options.shortName,
+      logoPath,
+      options.showShortName !== false,
+      options.logoSize || 20,
+      options.cardPadding || 10
+    )
   })
 }
 
@@ -226,14 +299,14 @@ function drawBackPage(
   cards.forEach((card, index) => {
     const row = Math.floor(index / CARDS_PER_ROW)
     const col = (CARDS_PER_ROW - 1) - (index % CARDS_PER_ROW) // Mirror column
-    const x = MARGIN + (col * (CARD_WIDTH + GAP))
-    const y = MARGIN + (row * (CARD_HEIGHT + GAP))
+    const x = MARGIN_X + (col * (CARD_WIDTH + GAP))
+    const y = MARGIN_Y + (row * (CARD_HEIGHT + GAP))
 
     const logoPath = card.cardType === 'black'
       ? options.logos?.blackBack || null
       : options.logos?.whiteBack || null
 
-    drawCardBack(doc, card.cardType === 'black', x, y, options.shortName, logoPath)
+    drawCardBack(doc, card.cardType === 'black', x, y, options.shortName, logoPath, options.showShortName !== false, options.backLogoSize || 60)
   })
 }
 
@@ -244,8 +317,16 @@ export async function generatePDF(
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: 'A4',
-      margin: MARGIN
+      margin: 0
     })
+
+    // Register custom fonts with emoji support
+    if (existsSync(FONT_BOLD)) {
+      doc.registerFont('NotoSans-Bold', FONT_BOLD)
+    }
+    if (existsSync(FONT_REGULAR)) {
+      doc.registerFont('NotoSans-Regular', FONT_REGULAR)
+    }
 
     const chunks: Buffer[] = []
 

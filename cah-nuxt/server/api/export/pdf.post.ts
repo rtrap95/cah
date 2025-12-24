@@ -10,6 +10,10 @@ interface ExportBody {
   includeBacks?: boolean
   deckName?: string
   shortName?: string
+  showShortName?: boolean
+  logoSize?: number
+  backLogoSize?: number
+  cardPadding?: number
 }
 
 export default defineEventHandler(async (event) => {
@@ -58,6 +62,10 @@ export default defineEventHandler(async (event) => {
     shortName: body.shortName || deckData.shortName,
     cardsType: body.cardsType || 'all',
     includeBacks: body.includeBacks || false,
+    showShortName: body.showShortName !== false,
+    logoSize: body.logoSize || 20,
+    backLogoSize: body.backLogoSize || 60,
+    cardPadding: body.cardPadding || 10,
     logos: {
       blackFront: toAbsolutePath(deckData.blackLogoPath),
       whiteFront: toAbsolutePath(deckData.whiteLogoPath),

@@ -4,6 +4,7 @@ import { eq, sql } from 'drizzle-orm'
 interface UpdateCardBody {
   text?: string
   pick?: number
+  fontSize?: number
 }
 
 export default defineEventHandler(async (event) => {
@@ -33,6 +34,7 @@ export default defineEventHandler(async (event) => {
     .set({
       text: body.text ?? existing.text,
       pick: existing.cardType === 'black' ? (body.pick ?? existing.pick) : 1,
+      fontSize: body.fontSize ?? existing.fontSize,
     })
     .where(eq(schema.cards.id, id))
     .returning()

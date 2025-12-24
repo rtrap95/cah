@@ -12,7 +12,7 @@ const cardFilter = ref<CardType | 'all'>('all')
 const searchQuery = ref('')
 
 // Modals state
-const showAddCardModal = ref(false)
+const showBrowseCardsModal = ref(false)
 const showBatchAddModal = ref(false)
 const showEditCardModal = ref(false)
 const showSettingsModal = ref(false)
@@ -41,8 +41,8 @@ function handleCardClick(card: Card) {
   showEditCardModal.value = true
 }
 
-function handleAddCard() {
-  showAddCardModal.value = true
+function handleBrowseCards() {
+  showBrowseCardsModal.value = true
 }
 
 function handleBatchAdd() {
@@ -96,7 +96,7 @@ async function refreshDeck() {
       <!-- Sidebar -->
       <DeckSidebar
         :deck="currentDeck"
-        @add-card="handleAddCard"
+        @browse-cards="handleBrowseCards"
         @batch-add="handleBatchAdd"
         @random="handleRandom"
         @export="handleExport"
@@ -143,8 +143,8 @@ async function refreshDeck() {
     </template>
 
     <!-- Modals -->
-    <ModalAddCardModal
-      v-model:open="showAddCardModal"
+    <ModalBrowseCardsModal
+      v-model:open="showBrowseCardsModal"
       :deck-id="deckId"
       @added="refreshDeck"
     />

@@ -13,6 +13,10 @@ const emit = defineEmits<{
 
 const isBlack = computed(() => props.card.cardType === 'black')
 
+const textStyle = computed(() => ({
+  fontSize: `${(props.card.fontSize || 100) / 100}em`
+}))
+
 function handleClick() {
   if (props.clickable) {
     emit('click', props.card)
@@ -37,7 +41,7 @@ function handleClick() {
     </span>
 
     <div class="flex-1 flex items-center justify-center pt-4">
-      <p class="text-sm font-bold text-center leading-relaxed">
+      <p class="text-sm font-bold text-center leading-relaxed" :style="textStyle">
         {{ card.text }}
       </p>
     </div>

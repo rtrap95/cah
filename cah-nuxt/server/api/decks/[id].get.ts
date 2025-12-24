@@ -39,6 +39,7 @@ export default defineEventHandler(async (event) => {
       text: card.text,
       cardType: card.cardType as 'black' | 'white',
       pick: card.pick,
+      fontSize: card.fontSize,
       createdAt: new Date(card.createdAt),
     }
 

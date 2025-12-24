@@ -17,7 +17,8 @@ const { confirm } = useConfirm()
 
 const form = reactive({
   text: '',
-  pick: 1
+  pick: 1,
+  fontSize: 100
 })
 
 const loading = ref(false)
@@ -38,6 +39,7 @@ watch(() => props.card, (card) => {
   if (card) {
     form.text = card.text
     form.pick = card.pick
+    form.fontSize = card.fontSize || 100
   }
 }, { immediate: true })
 
@@ -53,7 +55,7 @@ async function handleSave() {
   error.value = ''
 
   try {
-    await updateCard(props.card.id, form.text.trim(), form.pick)
+    await updateCard(props.card.id, form.text.trim(), form.pick, form.fontSize)
     emit('saved')
     isOpen.value = false
   } catch (e) {
@@ -119,6 +121,20 @@ async function handleDelete() {
             :items="pickOptions"
             value-key="value"
           />
+        </UFormField>
+
+        <UFormField label="Dimensione testo">
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-a-large-small" class="text-gray-400 shrink-0" />
+            <USlider
+              v-model="form.fontSize"
+              :min="50"
+              :max="500"
+              :step="10"
+              class="flex-1"
+            />
+            <span class="text-sm font-mono w-12 text-right">{{ form.fontSize }}%</span>
+          </div>
         </UFormField>
 
         <p v-if="error" class="text-sm text-error">{{ error }}</p>

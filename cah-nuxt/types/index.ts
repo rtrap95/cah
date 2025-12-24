@@ -6,6 +6,7 @@ export interface Card {
   text: string
   cardType: CardType
   pick: number
+  fontSize: number
   createdAt?: Date
 }
 
@@ -55,4 +56,8 @@ export interface ExportConfig {
   whiteBackLogoPath?: string | null
   cardsType: 'all' | 'black' | 'white'
   includeBacks: boolean
+  showShortName?: boolean
+  logoSize?: number
+  backLogoSize?: number
+  cardPadding?: number
 }

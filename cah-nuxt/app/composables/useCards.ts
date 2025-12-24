@@ -28,10 +28,10 @@ export function useCards() {
     return result
   }
 
-  async function updateCard(cardId: number, text: string, pick?: number) {
+  async function updateCard(cardId: number, text: string, pick?: number, fontSize?: number) {
     await $fetch(`/api/cards/${cardId}`, {
       method: 'PUT',
-      body: { text, pick }
+      body: { text, pick, fontSize }
     })
     if (currentDeck.value?.id) {
       await loadDeck(currentDeck.value.id)
@@ -53,6 +53,23 @@ export function useCards() {
     return await $fetch(`/api/cards/search?${params}`)
   }
 
+  async function fetchAllCards(excludeDeckId?: number, query?: string, type?: CardType) {
+    const params = new URLSearchParams()
+    if (excludeDeckId) params.set('excludeDeckId', String(excludeDeckId))
+    if (query) params.set('q', query)
+    if (type) params.set('type', type)
+
+    return await $fetch<(Card & { deckName: string })[]>(`/api/cards?${params}`)
+  }
+
+  async function copyCardToDeck(cardId: number, targetDeckId: number) {
+    await $fetch('/api/cards/copy', {
+      method: 'POST',
+      body: { cardId, targetDeckId }
+    })
+    await loadDeck(targetDeckId)
+  }
+
   return {
     allCards,
     blackCards,
@@ -61,6 +78,8 @@ export function useCards() {
     batchAddCards,
     updateCard,
     deleteCard,
-    searchCards
+    searchCards,
+    fetchAllCards,
+    copyCardToDeck
   }
 }
