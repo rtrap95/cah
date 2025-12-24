@@ -4,7 +4,11 @@ export function useDeck() {
   const currentDeck = useState<Deck | null>('currentDeck', () => null)
   const decks = useState<DeckListItem[]>('decks', () => [])
   const loading = useState('deckLoading', () => false)
+  const hasFetchedDecks = useState('hasFetchedDecks', () => false)
   const error = useState<string | null>('deckError', () => null)
+
+  // Show loading skeleton until first fetch is complete
+  const isLoadingDecks = computed(() => loading.value || !hasFetchedDecks.value)
 
   async function fetchDecks() {
     loading.value = true
@@ -15,6 +19,7 @@ export function useDeck() {
       error.value = e instanceof Error ? e.message : 'Failed to fetch decks'
     } finally {
       loading.value = false
+      hasFetchedDecks.value = true
     }
   }
 
@@ -111,6 +116,7 @@ export function useDeck() {
     currentDeck,
     decks,
     loading,
+    isLoadingDecks,
     error,
     fetchDecks,
     loadDeck,

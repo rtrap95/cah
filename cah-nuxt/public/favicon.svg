@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Black card (background) -->
+  <rect x="2" y="4" width="20" height="28" rx="2" ry="2" fill="#1a1a1a" transform="rotate(-8 12 18)"/>
+  <!-- White card (foreground) -->
+  <rect x="10" y="0" width="20" height="28" rx="2" ry="2" fill="#ffffff" stroke="#cccccc" stroke-width="0.5" transform="rotate(8 20 14)"/>
+  <!-- Underscore on white card -->
+  <rect x="14" y="12" width="12" height="2" rx="1" fill="#1a1a1a" transform="rotate(8 20 13)"/>
+</svg>

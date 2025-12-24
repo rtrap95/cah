@@ -2,7 +2,7 @@
 import type { DeckListItem } from '~/types'
 
 const router = useRouter()
-const { decks, loading, fetchDecks, deleteDeck } = useDeck()
+const { decks, isLoadingDecks, fetchDecks, deleteDeck } = useDeck()
 const { confirm } = useConfirm()
 
 const showNewDeckModal = ref(false)
@@ -61,7 +61,7 @@ function handleDeckCreated(deckId: number) {
         <h2 class="text-lg font-semibold mb-4">I tuoi Deck</h2>
         <DeckList
           :decks="decks"
-          :loading="loading"
+          :loading="isLoadingDecks"
           @select="handleSelectDeck"
           @delete="handleDeleteDeck"
         />
